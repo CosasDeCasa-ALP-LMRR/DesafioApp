@@ -1,0 +1,48 @@
+name: CI - React + Postgres
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: admin123
+          POSTGRES_DB: desafio
+        ports:
+          - 5435:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"              # Cache de dependencias para builds más rápidos
+
+      - name: Install dependencies
+        run: npm ci                 # ci garantiza instalación determinista
+
+      - name: Lint
+        run: npm run lint           # oxlint (reemplaza npm test: no existe en este proyecto)
+        env:
+          DATABASE_URL: postgres://admin:admin123@localhost:5435/desafio
+
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: postgres://admin:admin123@localhost:5435/desafio
