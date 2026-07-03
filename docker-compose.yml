@@ -1,0 +1,43 @@
+version: "3.9"
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+
+services:
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4500:80"      # Puerto host cambiado a 4500 (libre, evidencia de cambio)
+    depends_on:
+      db:
+        condition: service_healthy   # Espera a que Postgres esté listo
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: desafio           # Base de datos llamada "desafio" según la ronda
+    ports:
+      - "5435:5432"    # Puerto host cambiado a 5435 (libre, evidencia de cambio)
+    volumes:
+      - postgres-data:/var/lib/postgresql/data   # Persistencia de datos
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d desafio"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
